@@ -132,13 +132,11 @@ for epoch in range(n_epochs):
     for i, batch in enumerate(dataloader):
 
         #real images of domains A and B
-        real_A = torch.Tensor(batch['A'] + torch.randn(batch['A'].size())).to(device)
-        real_B = torch.Tensor(batch['B'] + torch.randn(batch['B'].size())).to(device)
+        real_A = torch.Tensor(batch['A']).to(device)
+        real_B = torch.Tensor(batch['B']).to(device)
 
         if(real_A.size(1) != 3 or real_B.size(1) != 3):
             continue
-
-        optimizer_G.zero_grad()
 
         fake_B = G_AB(real_A).to(device)
         fake_A = G_BA(real_B).to(device)
@@ -164,8 +162,9 @@ for epoch in range(n_epochs):
         cycle_loss_B = criterion_cycle(G_AB(fake_A), real_B)
         cycle_loss = (cycle_loss_A + cycle_loss_B)/2
 
-        gen_loss = lambda_id*id_loss + gan_loss*0.1 + lambda_cyc*cycle_loss
+        gen_loss = lambda_id*id_loss + gan_loss + lambda_cyc*cycle_loss
 
+        optimizer_G.zero_grad()
         gen_loss.backward()
         optimizer_G.step()
 
@@ -173,21 +172,19 @@ for epoch in range(n_epochs):
         #  Training Discriminator A
         #----------------------------
 
-        optimizer_D_A.zero_grad()
-
         loss_real_D_A = criterion_GAN(D_A(real_A.detach()), valid)
         loss_fake_D_A = criterion_GAN(D_A(fake_A.detach()), fake)
         loss_D_A = (loss_real_D_A + loss_fake_D_A)/2
 
+        optimizer_D_A.zero_grad()
         loss_D_A.backward()
         optimizer_D_A.step()
-
-        optimizer_D_B.zero_grad()
 
         loss_real_D_B = criterion_GAN(D_B(real_B.detach()), valid)
         loss_fake_D_B = criterion_GAN(D_B(fake_B.detach()), fake)
         loss_D_B = (loss_real_D_B + loss_fake_D_B)/2
 
+        optimizer_D_B.zero_grad()
         loss_D_B.backward()
         optimizer_D_B.step()
 
